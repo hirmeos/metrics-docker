@@ -1,0 +1,25 @@
+*.idea
+.python-version
+*local.ini*
+src/static
+*__pycache__*
+*~
+.tox
+
+# docs
+docs/build
+
+# hirmeos-repositories
+altmetrics/
+crossref_uri_import/
+deleteme/
+identifiers_db/
+identifier_translation_service/
+metrics-api/
+metrics_broker/
+tokens_api/
+tokens_db/
+
+
+# env files
+*.env

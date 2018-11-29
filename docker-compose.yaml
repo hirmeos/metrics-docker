@@ -1,0 +1,105 @@
+version: "3"
+
+services:
+  postgres_db:
+    build: ./db
+    container_name: "postgres_db"
+    restart: unless-stopped
+    volumes:
+      - db:/var/lib/postgresql/data
+      - /etc/localtime:/etc/localtime:ro
+    env_file:
+      - db.env
+    
+  hirmeos-tokens:
+    build: ./tokens_api
+    container_name: "hirmeos-tokens"
+    restart: unless-stopped
+    environment:
+      - DB_HOST=postgres_db
+    env_file:
+      - hirmeos-tokens.env
+    depends_on:
+      - postgres_db
+    ports:
+      - "8001:8080"
+    
+  hirmeos-translator:
+    build: ./identifier_translation_service
+    container_name: "hirmeos-translator"
+    restart: unless-stopped
+    environment:
+      - IDENTIFIERSDB_HOST=postgres_db
+    env_file:
+      - hirmeos-translator.env
+    depends_on:
+      - postgres_db
+
+  hirmeos-metrics-broker:
+    build: ./metrics_broker
+    container_name: "hirmeos-metrics-broker"
+    volumes:
+      - dist:/usr/src/app/dist
+    env_file:
+      - hirmeos-metrics-broker.env
+    depends_on:
+      - postgres_db
+      - hirmeos-translator
+      - hirmeos-tokens
+
+  metrics_broker_web:
+    image: nginx
+    container_name: "metrics_broker_web"
+    restart: unless-stopped
+    volumes:
+      - ./metrics_broker/nginx.conf:/etc/nginx/conf.d/broker.conf
+      - ./metrics_broker/site.conf:/etc/nginx/snippets/site.conf
+      - dist:/usr/share/nginx/html:ro
+    env_file:
+      - hirmeos-metrics-broker.env
+    ports:
+      - "8000:80"
+    command: /bin/bash -c "envsubst < /etc/nginx/conf.d/broker.conf > /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'"      
+    
+  # NEED TO CONVERT TO CRON JOB
+  # hirmeos-crossref-uri-import:
+  #   build: ./crossref_uri_import
+  #   container_name: "hirmeos-crossref-uri-import"
+  #   restart: unless-stopped
+  #   env_file:
+  #     - hirmeos-crossref-uri-import.env
+  #   depends_on:
+  #     - hirmeos-tokens
+  #     - hirmeos-translator    
+  
+   hirmeos-metrics-api:
+     build: ./metrics-api
+     container_name: "hirmeos-metrics-api"
+     restart: unless-stopped
+     environment:
+       - POSTGRES_HOST=postgres_db
+     env_file:
+       - hirmeos-metrics-api.env
+     depends_on:
+       - hirmeos-tokens  # One day
+       - postgres_db
+
+   hirmeos-altmetrics:
+     build: ./altmetrics
+     container_name: "hirmeos-altmetrics"
+     restart: unless-stopped
+     env_file:
+       - hirmeos-altmetrics.env
+     depends_on:
+       - postgres_db
+     ports:
+       - "5000:80"
+     # With gunicorn config --bind 0:80, this can be viewed at e.g.
+     # http://0.0.0.0:5000/api/uriset
+
+
+
+
+volumes:
+  db:
+  dist:
