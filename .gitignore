@@ -13,6 +13,7 @@ docs/build
 altmetrics/
 crossref_uri_import/
 deleteme/
+google_analytics_driver/
 identifiers_db/
 identifier_translation_service/
 metrics-api/

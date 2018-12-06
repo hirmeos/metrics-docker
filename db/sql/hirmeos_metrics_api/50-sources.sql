@@ -4,4 +4,8 @@ INSERT INTO source (source_name) VALUES
 ('Open Book Publishers'),
 ('Google Books'),
 ('Open Edition HTML Reader'),
-('World Reader App');
+('World Reader App'),
+
+-- We will need to add to this
+('Ubiquity Press')
+;
